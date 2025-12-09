@@ -3,65 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>世代的迴響 - 理想職場 DNA 診斷器 (個人輸入版)</title>
+    <title>世代的迴響 - 理想職場 DNA 診斷器</title>
     
-    <!-- 1. React & ReactDOM (Core) -->
-    <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
-    
-    <!-- 2. Prop-types -->
-    <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
-
-    <!-- 3. Recharts -->
-    <script src="https://unpkg.com/recharts@2.12.0/umd/Recharts.js"></script>
-    
-    <!-- 4. Babel -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
-    <!-- 5. Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-
     <style>
         body { font-family: "Microsoft JhengHei", "Heiti TC", sans-serif; background-color: #f8fafc; }
         .recharts-wrapper { margin: 0 auto; }
-        /* Custom Scrollbar */
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         /* Range Slider Styling */
-        input[type=range] {
-            -webkit-appearance: none; 
-            background: transparent; 
-        }
+        input[type=range] { -webkit-appearance: none; background: transparent; }
         input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            height: 16px;
-            width: 16px;
-            border-radius: 50%;
-            background: #4f46e5;
-            cursor: pointer;
-            margin-top: -6px; 
-            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%;
+            background: #4f46e5; cursor: pointer; margin-top: -6px; box-shadow: 0 1px 3px rgba(0,0,0,0.3);
         }
         input[type=range]::-webkit-slider-runnable-track {
-            width: 100%;
-            height: 4px;
-            cursor: pointer;
-            background: #e2e8f0;
-            border-radius: 2px;
+            width: 100%; height: 4px; cursor: pointer; background: #e2e8f0; border-radius: 2px;
         }
         input[type=range]:focus { outline: none; }
     </style>
+
+    <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+    
+    <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
+    <script src="https://unpkg.com/recharts@2.12.0/umd/Recharts.js"></script>
+    
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body>
-    <div id="root"></div>
+    <div id="root">
+        <div style="height: 100vh; display: flex; align-items: center; justify-content: center; color: #64748b;">
+            載入中... (如果停留太久，請按 F12 查看 Console 錯誤訊息)
+        </div>
+    </div>
 
     <script type="text/babel">
+        // 安全檢查：確保所有庫都已載入
+        if (!window.React || !window.ReactDOM || !window.Recharts) {
+            document.getElementById('root').innerHTML = '<div style="color:red; padding:20px; text-align:center;">錯誤：程式庫載入失敗，請檢查網路連線或 CDN 狀態。</div>';
+            throw new Error("Libraries not loaded");
+        }
+
         const { useState, useMemo, useEffect } = React;
         const { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Legend, Tooltip } = window.Recharts;
 
-        // --- 0. Inline Icons ---
+        // --- 0. 圖示元件 ---
         const IconBase = ({ children, size = 20, className = "" }) => (
             <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{children}</svg>
         );
@@ -72,7 +61,8 @@
         const CheckIcon = (props) => <IconBase {...props}><polyline points="20 6 9 17 4 12" /></IconBase>;
         const UserEditIcon = (props) => <IconBase {...props}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></IconBase>;
 
-        // --- 1. Data ---
+        // --- 1. 資料 ---
+        // 為了確保不崩潰，這裡使用變數包裝，請確保複製完整
         const rawData = [{"gender": "女", "grade": "大一", "industry": "E. 公家機關/教育單位", "salary": 5, "stability": 5, "flexibility": 4, "wl_balance": 5, "autonomy": 3, "career_speed": 4, "growth": 3}, {"gender": "男", "grade": "大一", "industry": "D. 金融/專業服務業", "salary": 5, "stability": 3, "flexibility": 4, "wl_balance": 5, "autonomy": 2, "career_speed": 2, "growth": 2}, {"gender": "女", "grade": "大一", "industry": "C. 穩定傳產/製造業", "salary": 4, "stability": 3, "flexibility": 2, "wl_balance": 3, "autonomy": 3, "career_speed": 4, "growth": 2}, {"gender": "女", "grade": "大一", "industry": "D. 金融/專業服務業", "salary": 4, "stability": 2, "flexibility": 4, "wl_balance": 5, "autonomy": 5, "career_speed": 5, "growth": 5}, {"gender": "男", "grade": "大二", "industry": "G. 尚無明確想法", "salary": 3, "stability": 4, "flexibility": 4, "wl_balance": 4, "autonomy": 4, "career_speed": 4, "growth": 4}, {"gender": "男", "grade": "大二", "industry": "D. 金融/專業服務業", "salary": 5, "stability": 5, "flexibility": 3, "wl_balance": 4, "autonomy": 3, "career_speed": 4, "growth": 3}, {"gender": "男", "grade": "大二", "industry": "D. 金融/專業服務業", "salary": 5, "stability": 5, "flexibility": 3, "wl_balance": 4, "autonomy": 3, "career_speed": 5, "growth": 4}, {"gender": "女", "grade": "大二", "industry": "D. 金融/專業服務業", "salary": 5, "stability": 4, "flexibility": 5, "wl_balance": 3, "autonomy": 5, "career_speed": 4, "growth": 4}, {"gender": "男", "grade": "大三", "industry": "D. 金融/專業服務業", "salary": 4, "stability": 2, "flexibility": 4, "wl_balance": 5, "autonomy": 3, "career_speed": 4, "growth": 5}, {"gender": "女", "grade": "大三", "industry": "E. 公家機關/教育單位", "salary": 3, "stability": 5, "flexibility": 4, "wl_balance": 4, "autonomy": 3, "career_speed": 4, "growth": 5}, {"gender": "男", "grade": "大三", "industry": "E. 公家機關/教育單位", "salary": 3, "stability": 5, "flexibility": 4, "wl_balance": 4, "autonomy": 4, "career_speed": 2, "growth": 4}, {"gender": "男", "grade": "大三", "industry": "A. 大型科技業", "salary": 5, "stability": 4, "flexibility": 2, "wl_balance": 4, "autonomy": 3, "career_speed": 4, "growth": 3}, {"gender": "男", "grade": "大三", "industry": "E. 公家機關/教育單位", "salary": 4, "stability": 5, "flexibility": 4, "wl_balance": 4, "autonomy": 4, "career_speed": 4, "growth": 3}, {"gender": "男", "grade": "大三", "industry": "E. 公家機關/教育單位", "salary": 5, "stability": 5, "flexibility": 4, "wl_balance": 5, "autonomy": 4, "career_speed": 5, "growth": 4}, {"gender": "男", "grade": "大三", "industry": "F. 自營業/SOHO/工作室", "salary": 2, "stability": 2, "flexibility": 4, "wl_balance": 5, "autonomy": 5, "career_speed": 2, "growth": 2}, {"gender": "女", "grade": "大三", "industry": "F. 自營業/SOHO/工作室", "salary": 1, "stability": 1, "flexibility": 5, "wl_balance": 5, "autonomy": 5, "career_speed": 2, "growth": 4}, {"gender": "女", "grade": "大三", "industry": "A. 大型科技業", "salary": 5, "stability": 3, "flexibility": 1, "wl_balance": 2, "autonomy": 2, "career_speed": 3, "growth": 4}, {"gender": "男", "grade": "大三", "industry": "A. 大型科技業", "salary": 5, "stability": 5, "flexibility": 1, "wl_balance": 2, "autonomy": 2, "career_speed": 5, "growth": 2}, {"gender": "男", "grade": "大四", "industry": "D. 金融/專業服務業", "salary": 5, "stability": 3, "flexibility": 3, "wl_balance": 5, "autonomy": 2, "career_speed": 5, "growth": 5}, {"gender": "男", "grade": "大四", "industry": "A. 大型科技業", "salary": 5, "stability": 5, "flexibility": 5, "wl_balance": 5, "autonomy": 5, "career_speed": 5, "growth": 4}, {"gender": "男", "grade": "大四", "industry": "A. 大型科技業", "salary": 5, "stability": 4, "flexibility": 3, "wl_balance": 4, "autonomy": 4, "career_speed": 4, "growth": 5}, {"gender": "男", "grade": "大四", "industry": "E. 公家機關/教育單位", "salary": 5, "stability": 5, "flexibility": 5, "wl_balance": 5, "autonomy": 5, "career_speed": 4, "growth": 5}, {"gender": "男", "grade": "大四", "industry": "A. 大型科技業", "salary": 5, "stability": 5, "flexibility": 5, "wl_balance": 5, "autonomy": 5, "career_speed": 5, "growth": 5}, {"gender": "男", "grade": "大四", "industry": "E. 公家機關/教育單位", "salary": 1, "stability": 1, "flexibility": 3, "wl_balance": 2, "autonomy": 1, "career_speed": 3, "growth": 1}, {"gender": "女", "grade": "大四", "industry": "G. 尚無明確想法", "salary": 4, "stability": 3, "flexibility": 3, "wl_balance": 3, "autonomy": 3, "career_speed": 3, "growth": 4}, {"gender": "女", "grade": "大四", "industry": "B. 創新網路新創", "salary": 4, "stability": 4, "flexibility": 2, "wl_balance": 2, "autonomy": 2, "career_speed": 4, "growth": 5}, {"gender": "男", "grade": "大四", "industry": "B. 創新網路新創", "salary": 3, "stability": 3, "flexibility": 4, "wl_balance": 3, "autonomy": 4, "career_speed": 2, "growth": 5}, {"gender": "男", "grade": "大四", "industry": "B. 創新網路新創", "salary": 5, "stability": 5, "flexibility": 5, "wl_balance": 5, "autonomy": 5, "career_speed": 5, "growth": 5}, {"gender": "男", "grade": "大四", "industry": "B. 創新網路新創", "salary": 5, "stability": 4, "flexibility": 4, "wl_balance": 5, "autonomy": 4, "career_speed": 3, "growth": 4}, {"gender": "男", "grade": "大四", "industry": "D. 金融/專業服務業", "salary": 5, "stability": 3, "flexibility": 3, "wl_balance": 5, "autonomy": 2, "career_speed": 4, "growth": 3}, {"gender": "男", "grade": "大四", "industry": "A. 大型科技業", "salary": 5, "stability": 5, "flexibility": 5, "wl_balance": 5, "autonomy": 3, "career_speed": 4, "growth": 4}, {"gender": "女", "grade": "大四", "industry": "D. 金融/專業服務業", "salary": 3, "stability": 5, "flexibility": 1, "wl_balance": 5, "autonomy": 1, "career_speed": 2, "growth": 2}, {"gender": "男", "grade": "大四", "industry": "D. 金融/專業服務業", "salary": 5, "stability": 5, "flexibility": 5, "wl_balance": 5, "autonomy": 5, "career_speed": 5, "growth": 5}, {"gender": "女", "grade": "大四", "industry": "C. 穩定傳產/製造業", "salary": 5, "stability": 5, "flexibility": 5, "wl_balance": 5, "autonomy": 4, "career_speed": 5, "growth": 4}, {"gender": "男", "grade": "大四", "industry": "A. 大型科技業", "salary": 5, "stability": 5, "flexibility": 3, "wl_balance": 5, "autonomy": 3, "career_speed": 4, "growth": 4}, {"gender": "女", "grade": "大四", "industry": "D. 金融/專業服務業", "salary": 5, "stability": 2, "flexibility": 3, "wl_balance": 4, "autonomy": 5, "career_speed": 4, "growth": 5}, {"gender": "女", "grade": "大四", "industry": "E. 公家機關/教育單位", "salary": 3, "stability": 5, "flexibility": 2, "wl_balance": 4, "autonomy": 4, "career_speed": 4, "growth": 4}, {"gender": "男", "grade": "大四", "industry": "E. 公家機關/教育單位", "salary": 2, "stability": 4, "flexibility": 5, "wl_balance": 5, "autonomy": 3, "career_speed": 2, "growth": 4}, {"gender": "女", "grade": "大四", "industry": "B. 創新網路新創", "salary": 3, "stability": 2, "flexibility": 4, "wl_balance": 3, "autonomy": 5, "career_speed": 3, "growth": 5}, {"gender": "男", "grade": "大四", "industry": "F. 自營業/SOHO/工作室", "salary": 3, "stability": 4, "flexibility": 2, "wl_balance": 2, "autonomy": 4, "career_speed": 4, "growth": 2}, {"gender": "女", "grade": "大四", "industry": "B. 創新網路新創", "salary": 3, "stability": 2, "flexibility": 4, "wl_balance": 4, "autonomy": 3, "career_speed": 4, "growth": 3}, {"gender": "女", "grade": "碩士班（含）以上", "industry": "F. 自營業/SOHO/工作室", "salary": 2, "stability": 1, "flexibility": 3, "wl_balance": 1, "autonomy": 2, "career_speed": 2, "growth": 2}, {"gender": "男", "grade": "碩士班（含）以上", "industry": "E. 公家機關/教育單位", "salary": 1, "stability": 2, "flexibility": 3, "wl_balance": 3, "autonomy": 3, "career_speed": 2, "growth": 2}, {"gender": "男", "grade": "碩士班（含）以上", "industry": "B. 創新網路新創", "salary": 4, "stability": 5, "flexibility": 2, "wl_balance": 2, "autonomy": 3, "career_speed": 4, "growth": 4}, {"gender": "男", "grade": "碩士班（含）以上", "industry": "A. 大型科技業", "salary": 5, "stability": 3, "flexibility": 1, "wl_balance": 1, "autonomy": 2, "career_speed": 4, "growth": 2}, {"gender": "男", "grade": "碩士班（含）以上", "industry": "F. 自營業/SOHO/工作室", "salary": 5, "stability": 3, "flexibility": 2, "wl_balance": 2, "autonomy": 2, "career_speed": 5, "growth": 5}, {"gender": "女", "grade": "碩士班（含）以上", "industry": "E. 公家機關/教育單位", "salary": 2, "stability": 4, "flexibility": 2, "wl_balance": 4, "autonomy": 3, "career_speed": 4, "growth": 3}, {"gender": "女", "grade": "碩士班（含）以上", "industry": "F. 自營業/SOHO/工作室", "salary": 2, "stability": 3, "flexibility": 2, "wl_balance": 2, "autonomy": 5, "career_speed": 3, "growth": 5}, {"gender": "女", "grade": "碩士班（含）以上", "industry": "E. 公家機關/教育單位", "salary": 2, "stability": 5, "flexibility": 2, "wl_balance": 4, "autonomy": 3, "career_speed": 4, "growth": 5}, {"gender": "女", "grade": "碩士班（含）以上", "industry": "B. 創新網路新創", "salary": 5, "stability": 1, "flexibility": 1, "wl_balance": 1, "autonomy": 5, "career_speed": 5, "growth": 5}, {"gender": "男", "grade": "碩士班（含）以上", "industry": "C. 穩定傳產/製造業", "salary": 4, "stability": 2, "flexibility": 3, "wl_balance": 4, "autonomy": 4, "career_speed": 3, "growth": 4}, {"gender": "女", "grade": "碩士班（含）以上", "industry": "D. 金融/專業服務業", "salary": 3, "stability": 4, "flexibility": 2, "wl_balance": 4, "autonomy": 2, "career_speed": 4, "growth": 3}];
 
         const socialScores = {
@@ -479,8 +469,14 @@
             );
         }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        // 錯誤邊界：防止白屏
+        try {
+            const root = ReactDOM.createRoot(document.getElementById('root'));
+            root.render(<App />);
+        } catch (error) {
+            console.error("React Render Error:", error);
+            document.getElementById('root').innerHTML = `<div style="padding:20px; color:red;"><h3>程式發生錯誤</h3><pre>${error.toString()}</pre></div>`;
+        }
     </script>
 </body>
 </html>
