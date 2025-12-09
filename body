@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>世代的迴響 - 理想職場 DNA 診斷器 (個人輸入版)</title>
+    
+    <!-- 1. React & ReactDOM (Core) -->
+    <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+    
+    <!-- 2. Prop-types -->
+    <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
+
+    <!-- 3. Recharts -->
+    <script src="https://unpkg.com/recharts@2.12.0/umd/Recharts.js"></script>
+    
+    <!-- 4. Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- 5. Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        body { font-family: "Microsoft JhengHei", "Heiti TC", sans-serif; background-color: #f8fafc; }
+        .recharts-wrapper { margin: 0 auto; }
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        /* Range Slider Styling */
+        input[type=range] {
+            -webkit-appearance: none; 
+            background: transparent; 
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #4f46e5;
+            cursor: pointer;
+            margin-top: -6px; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #e2e8f0;
+            border-radius: 2px;
+        }
+        input[type=range]:focus { outline: none; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useMemo, useEffect } = React;
+        const { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Legend, Tooltip } = window.Recharts;
+
+        // --- 0. Inline Icons ---
+        const IconBase = ({ children, size = 20, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{children}</svg>
+        );
+        const FilterIcon = (props) => <IconBase {...props}><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" /></IconBase>;
+        const LayersIcon = (props) => <IconBase {...props}><polygon points="12 2 2 7 12 12 22 7 12 2" /><polyline points="2 17 12 22 22 17" /><polyline points="2 12 12 17 22 12" /></IconBase>;
+        const RefreshIcon = (props) => <IconBase {...props}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M8 16H3v5" /></IconBase>;
+        const AlertIcon = (props) => <IconBase {...props}><circle cx="12" cy="12" r="10" /><line x1="12" x2="12" y1="8" y2="12" /><line x1="12" x2="12.01" y1="16" y2="16" /></IconBase>;
+        const CheckIcon = (props) => <IconBase {...props}><polyline points="20 6 9 17 4 12" /></IconBase>;
+        const UserEditIcon = (props) => <IconBase {...props}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></IconBase>;
+
+        // --- 1. Data ---
+        const rawData = [{"gender": "女", "grade": "大一", "industry": "E. 公家機關/教育單位", "salary": 5, "stability": 5, "flexibility": 4, "wl_balance": 5, "autonomy": 3, "career_speed": 4, "growth": 3}, {"gender": "男", "grade": "大一", "industry": "D. 金融/專業服務業", "salary": 5, "stability": 3, "flexibility": 4, "wl_balance": 5, "autonomy": 2, "career_speed": 2, "growth": 2}, {"gender": "女", "grade": "大一", "industry": "C. 穩定傳產/製造業", "salary": 4, "stability": 3, "flexibility": 2, "wl_balance": 3, "autonomy": 3, "career_speed": 4, "growth": 2}, {"gender": "女", "grade": "大一", "industry": "D. 金融/專業服務業", "salary": 4, "stability": 2, "flexibility": 4, "wl_balance": 5, "autonomy": 5, "career_speed": 5, "growth": 5}, {"gender": "男", "grade": "大二", "industry": "G. 尚無明確想法", "salary": 3, "stability": 4, "flexibility": 4, "wl_balance": 4, "autonomy": 4, "career_speed": 4, "growth": 4}, {"gender": "男", "grade": "大二", "industry": "D. 金融/專業服務業", "salary": 5, "stability": 5, "flexibility": 3, "wl_balance": 4, "autonomy": 3, "career_speed": 4, "growth": 3}, {"gender": "男", "grade": "大二", "industry": "D. 金融/專業服務業", "salary": 5, "stability": 5, "flexibility": 3, "wl_balance": 4, "autonomy": 3, "career_speed": 5, "growth": 4}, {"gender": "女", "grade": "大二", "industry": "D. 金融/專業服務業", "salary": 5, "stability": 4, "flexibility": 5, "wl_balance": 3, "autonomy": 5, "career_speed": 4, "growth": 4}, {"gender": "男", "grade": "大三", "industry": "D. 金融/專業服務業", "salary": 4, "stability": 2, "flexibility": 4, "wl_balance": 5, "autonomy": 3, "career_speed": 4, "growth": 5}, {"gender": "女", "grade": "大三", "industry": "E. 公家機關/教育單位", "salary": 3, "stability": 5, "flexibility": 4, "wl_balance": 4, "autonomy": 3, "career_speed": 4, "growth": 5}, {"gender": "男", "grade": "大三", "industry": "E. 公家機關/教育單位", "salary": 3, "stability": 5, "flexibility": 4, "wl_balance": 4, "autonomy": 4, "career_speed": 2, "growth": 4}, {"gender": "男", "grade": "大三", "industry": "A. 大型科技業", "salary": 5, "stability": 4, "flexibility": 2, "wl_balance": 4, "autonomy": 3, "career_speed": 4, "growth": 3}, {"gender": "男", "grade": "大三", "industry": "E. 公家機關/教育單位", "salary": 4, "stability": 5, "flexibility": 4, "wl_balance": 4, "autonomy": 4, "career_speed": 4, "growth": 3}, {"gender": "男", "grade": "大三", "industry": "E. 公家機關/教育單位", "salary": 5, "stability": 5, "flexibility": 4, "wl_balance": 5, "autonomy": 4, "career_speed": 5, "growth": 4}, {"gender": "男", "grade": "大三", "industry": "F. 自營業/SOHO/工作室", "salary": 2, "stability": 2, "flexibility": 4, "wl_balance": 5, "autonomy": 5, "career_speed": 2, "growth": 2}, {"gender": "女", "grade": "大三", "industry": "F. 自營業/SOHO/工作室", "salary": 1, "stability": 1, "flexibility": 5, "wl_balance": 5, "autonomy": 5, "career_speed": 2, "growth": 4}, {"gender": "女", "grade": "大三", "industry": "A. 大型科技業", "salary": 5, "stability": 3, "flexibility": 1, "wl_balance": 2, "autonomy": 2, "career_speed": 3, "growth": 4}, {"gender": "男", "grade": "大三", "industry": "A. 大型科技業", "salary": 5, "stability": 5, "flexibility": 1, "wl_balance": 2, "autonomy": 2, "career_speed": 5, "growth": 2}, {"gender": "男", "grade": "大四", "industry": "D. 金融/專業服務業", "salary": 5, "stability": 3, "flexibility": 3, "wl_balance": 5, "autonomy": 2, "career_speed": 5, "growth": 5}, {"gender": "男", "grade": "大四", "industry": "A. 大型科技業", "salary": 5, "stability": 5, "flexibility": 5, "wl_balance": 5, "autonomy": 5, "career_speed": 5, "growth": 4}, {"gender": "男", "grade": "大四", "industry": "A. 大型科技業", "salary": 5, "stability": 4, "flexibility": 3, "wl_balance": 4, "autonomy": 4, "career_speed": 4, "growth": 5}, {"gender": "男", "grade": "大四", "industry": "E. 公家機關/教育單位", "salary": 5, "stability": 5, "flexibility": 5, "wl_balance": 5, "autonomy": 5, "career_speed": 4, "growth": 5}, {"gender": "男", "grade": "大四", "industry": "A. 大型科技業", "salary": 5, "stability": 5, "flexibility": 5, "wl_balance": 5, "autonomy": 5, "career_speed": 5, "growth": 5}, {"gender": "男", "grade": "大四", "industry": "E. 公家機關/教育單位", "salary": 1, "stability": 1, "flexibility": 3, "wl_balance": 2, "autonomy": 1, "career_speed": 3, "growth": 1}, {"gender": "女", "grade": "大四", "industry": "G. 尚無明確想法", "salary": 4, "stability": 3, "flexibility": 3, "wl_balance": 3, "autonomy": 3, "career_speed": 3, "growth": 4}, {"gender": "女", "grade": "大四", "industry": "B. 創新網路新創", "salary": 4, "stability": 4, "flexibility": 2, "wl_balance": 2, "autonomy": 2, "career_speed": 4, "growth": 5}, {"gender": "男", "grade": "大四", "industry": "B. 創新網路新創", "salary": 3, "stability": 3, "flexibility": 4, "wl_balance": 3, "autonomy": 4, "career_speed": 2, "growth": 5}, {"gender": "男", "grade": "大四", "industry": "B. 創新網路新創", "salary": 5, "stability": 5, "flexibility": 5, "wl_balance": 5, "autonomy": 5, "career_speed": 5, "growth": 5}, {"gender": "男", "grade": "大四", "industry": "B. 創新網路新創", "salary": 5, "stability": 4, "flexibility": 4, "wl_balance": 5, "autonomy": 4, "career_speed": 3, "growth": 4}, {"gender": "男", "grade": "大四", "industry": "D. 金融/專業服務業", "salary": 5, "stability": 3, "flexibility": 3, "wl_balance": 5, "autonomy": 2, "career_speed": 4, "growth": 3}, {"gender": "男", "grade": "大四", "industry": "A. 大型科技業", "salary": 5, "stability": 5, "flexibility": 5, "wl_balance": 5, "autonomy": 3, "career_speed": 4, "growth": 4}, {"gender": "女", "grade": "大四", "industry": "D. 金融/專業服務業", "salary": 3, "stability": 5, "flexibility": 1, "wl_balance": 5, "autonomy": 1, "career_speed": 2, "growth": 2}, {"gender": "男", "grade": "大四", "industry": "D. 金融/專業服務業", "salary": 5, "stability": 5, "flexibility": 5, "wl_balance": 5, "autonomy": 5, "career_speed": 5, "growth": 5}, {"gender": "女", "grade": "大四", "industry": "C. 穩定傳產/製造業", "salary": 5, "stability": 5, "flexibility": 5, "wl_balance": 5, "autonomy": 4, "career_speed": 5, "growth": 4}, {"gender": "男", "grade": "大四", "industry": "A. 大型科技業", "salary": 5, "stability": 5, "flexibility": 3, "wl_balance": 5, "autonomy": 3, "career_speed": 4, "growth": 4}, {"gender": "女", "grade": "大四", "industry": "D. 金融/專業服務業", "salary": 5, "stability": 2, "flexibility": 3, "wl_balance": 4, "autonomy": 5, "career_speed": 4, "growth": 5}, {"gender": "女", "grade": "大四", "industry": "E. 公家機關/教育單位", "salary": 3, "stability": 5, "flexibility": 2, "wl_balance": 4, "autonomy": 4, "career_speed": 4, "growth": 4}, {"gender": "男", "grade": "大四", "industry": "E. 公家機關/教育單位", "salary": 2, "stability": 4, "flexibility": 5, "wl_balance": 5, "autonomy": 3, "career_speed": 2, "growth": 4}, {"gender": "女", "grade": "大四", "industry": "B. 創新網路新創", "salary": 3, "stability": 2, "flexibility": 4, "wl_balance": 3, "autonomy": 5, "career_speed": 3, "growth": 5}, {"gender": "男", "grade": "大四", "industry": "F. 自營業/SOHO/工作室", "salary": 3, "stability": 4, "flexibility": 2, "wl_balance": 2, "autonomy": 4, "career_speed": 4, "growth": 2}, {"gender": "女", "grade": "大四", "industry": "B. 創新網路新創", "salary": 3, "stability": 2, "flexibility": 4, "wl_balance": 4, "autonomy": 3, "career_speed": 4, "growth": 3}, {"gender": "女", "grade": "碩士班（含）以上", "industry": "F. 自營業/SOHO/工作室", "salary": 2, "stability": 1, "flexibility": 3, "wl_balance": 1, "autonomy": 2, "career_speed": 2, "growth": 2}, {"gender": "男", "grade": "碩士班（含）以上", "industry": "E. 公家機關/教育單位", "salary": 1, "stability": 2, "flexibility": 3, "wl_balance": 3, "autonomy": 3, "career_speed": 2, "growth": 2}, {"gender": "男", "grade": "碩士班（含）以上", "industry": "B. 創新網路新創", "salary": 4, "stability": 5, "flexibility": 2, "wl_balance": 2, "autonomy": 3, "career_speed": 4, "growth": 4}, {"gender": "男", "grade": "碩士班（含）以上", "industry": "A. 大型科技業", "salary": 5, "stability": 3, "flexibility": 1, "wl_balance": 1, "autonomy": 2, "career_speed": 4, "growth": 2}, {"gender": "男", "grade": "碩士班（含）以上", "industry": "F. 自營業/SOHO/工作室", "salary": 5, "stability": 3, "flexibility": 2, "wl_balance": 2, "autonomy": 2, "career_speed": 5, "growth": 5}, {"gender": "女", "grade": "碩士班（含）以上", "industry": "E. 公家機關/教育單位", "salary": 2, "stability": 4, "flexibility": 2, "wl_balance": 4, "autonomy": 3, "career_speed": 4, "growth": 3}, {"gender": "女", "grade": "碩士班（含）以上", "industry": "F. 自營業/SOHO/工作室", "salary": 2, "stability": 3, "flexibility": 2, "wl_balance": 2, "autonomy": 5, "career_speed": 3, "growth": 5}, {"gender": "女", "grade": "碩士班（含）以上", "industry": "E. 公家機關/教育單位", "salary": 2, "stability": 5, "flexibility": 2, "wl_balance": 4, "autonomy": 3, "career_speed": 4, "growth": 5}, {"gender": "女", "grade": "碩士班（含）以上", "industry": "B. 創新網路新創", "salary": 5, "stability": 1, "flexibility": 1, "wl_balance": 1, "autonomy": 5, "career_speed": 5, "growth": 5}, {"gender": "男", "grade": "碩士班（含）以上", "industry": "C. 穩定傳產/製造業", "salary": 4, "stability": 2, "flexibility": 3, "wl_balance": 4, "autonomy": 4, "career_speed": 3, "growth": 4}, {"gender": "女", "grade": "碩士班（含）以上", "industry": "D. 金融/專業服務業", "salary": 3, "stability": 4, "flexibility": 2, "wl_balance": 4, "autonomy": 2, "career_speed": 4, "growth": 3}];
+
+        const socialScores = {
+            'E. 公家機關/教育單位': [3.5, 5.0, 2.5, 4.5, 3.0, 2.0, 3.0], 
+            'A. 大型科技業':       [5.0, 3.5, 3.5, 2.0, 3.5, 4.0, 5.0], 
+            'B. 創新網路新創':     [3.0, 1.5, 4.5, 2.5, 5.0, 5.0, 5.0], 
+            'D. 金融/專業服務業':   [5.0, 3.5, 2.5, 2.0, 3.0, 4.0, 4.0], 
+            'C. 穩定傳產/製造業':   [3.5, 4.0, 2.0, 3.5, 2.5, 2.5, 3.0], 
+            'F. 自營業/SOHO/工作室': [3.0, 2.0, 5.0, 3.5, 5.0, 3.0, 4.0],
+            'G. 尚無明確想法': [3,3,3,3,3,3,3]
+        };
+
+        const translations = {
+            salary: '薪資報酬',
+            stability: '工作穩定性',
+            flexibility: '工時彈性',
+            wl_balance: '生活平衡',
+            autonomy: '工作自主權',
+            career_speed: '職涯速度',
+            growth: '學習成長'
+        };
+        const factorOrder = ['salary', 'stability', 'flexibility', 'wl_balance', 'autonomy', 'career_speed', 'growth'];
+        const colorPalette = ['#2563eb', '#9333ea', '#db2777', '#ea580c', '#16a34a', '#0891b2', '#4f46e5', '#ca8a04', '#dc2626', '#1e293b'];
+
+        // --- Options ---
+        const uniqueGenders = ['全部', ...new Set(rawData.map(d => d.gender))];
+        const gradeOrder = ['大一', '大二', '大三', '大四', '碩士班（含）以上'];
+        const uniqueGrades = ['全部', ...gradeOrder.filter(g => rawData.map(d => d.grade).includes(g))];
+        const uniqueIndustries = ['全部', ...Array.from(new Set(rawData.map(d => d.industry))).sort()];
+
+        function App() {
+            const [gender, setGender] = useState('全部');
+            const [grade, setGrade] = useState('全部');
+            const [industry, setIndustry] = useState('全部');
+            const [compareMode, setCompareMode] = useState('none'); 
+            const [showSocial, setShowSocial] = useState(false);
+            const [selectedGroups, setSelectedGroups] = useState([]);
+            
+            // New: Personal Input State
+            const [showPersonal, setShowPersonal] = useState(false);
+            const [personalScores, setPersonalScores] = useState({
+                salary: 3, stability: 3, flexibility: 3, wl_balance: 3, autonomy: 3, career_speed: 3, growth: 3
+            });
+
+            // Helper: Get all possible groups for current mode
+            const getAvailableGroups = (mode) => {
+                if (mode === 'gender') return uniqueGenders.filter(x => x !== '全部');
+                if (mode === 'grade') return gradeOrder; 
+                if (mode === 'industry') return uniqueIndustries.filter(x => x !== '全部');
+                return [];
+            };
+
+            const handleModeChange = (newMode) => {
+                setCompareMode(newMode);
+                if (newMode === 'gender') setGender('全部');
+                if (newMode === 'grade') setGrade('全部');
+                if (newMode === 'industry') setIndustry('全部');
+                setSelectedGroups(getAvailableGroups(newMode));
+            };
+
+            const toggleGroup = (group) => {
+                if (selectedGroups.includes(group)) {
+                    setSelectedGroups(selectedGroups.filter(g => g !== group));
+                } else {
+                    setSelectedGroups([...selectedGroups, group]);
+                }
+            };
+
+            // Update personal score
+            const handleScoreChange = (factor, value) => {
+                setPersonalScores(prev => ({
+                    ...prev,
+                    [factor]: parseInt(value)
+                }));
+            };
+
+            // 1. Filter Data
+            const filteredData = useMemo(() => {
+                return rawData.filter(item => {
+                    const matchGender = gender === '全部' || item.gender === gender;
+                    const matchGrade = grade === '全部' || item.grade === grade;
+                    const matchIndustry = industry === '全部' || item.industry === industry;
+                    return matchGender && matchGrade && matchIndustry;
+                });
+            }, [gender, grade, industry]);
+
+            // 2. Compute Chart Data
+            const chartDataPackage = useMemo(() => {
+                if (filteredData.length === 0 && !showPersonal) return { data: [], groups: [] };
+
+                let groups = [];
+                if (compareMode === 'none') {
+                    groups = ['整體平均'];
+                } else {
+                    const available = getAvailableGroups(compareMode);
+                    groups = available.filter(g => selectedGroups.includes(g));
+                }
+
+                let points = factorOrder.map(key => ({
+                    subject: translations[key],
+                    fullMark: 5
+                }));
+
+                // Calculate averages for groups
+                groups.forEach(groupName => {
+                    let groupData = filteredData;
+                    if (compareMode === 'gender') groupData = filteredData.filter(d => d.gender === groupName);
+                    if (compareMode === 'grade') groupData = filteredData.filter(d => d.grade === groupName);
+                    if (compareMode === 'industry') groupData = filteredData.filter(d => d.industry === groupName);
+
+                    factorOrder.forEach((key, index) => {
+                        if (groupData.length > 0) {
+                            const sum = groupData.reduce((acc, curr) => acc + curr[key], 0);
+                            points[index][groupName] = parseFloat((sum / groupData.length).toFixed(2));
+                        } else {
+                            points[index][groupName] = 0;
+                        }
+                    });
+                });
+
+                // Add Social Reality
+                const isSingleIndustrySelected = industry !== '全部';
+                if (isSingleIndustrySelected && socialScores[industry]) {
+                     factorOrder.forEach((key, index) => {
+                        points[index]['SocialReality'] = socialScores[industry][index];
+                    });
+                }
+
+                // Add Personal Scores
+                if (showPersonal) {
+                    factorOrder.forEach((key, index) => {
+                        points[index]['Personal'] = personalScores[key];
+                    });
+                }
+
+                return { data: points, groups };
+            }, [filteredData, compareMode, industry, selectedGroups, showPersonal, personalScores]);
+
+            const { data: chartData, groups } = chartDataPackage;
+
+            const handleReset = () => {
+                setGender('全部');
+                setGrade('全部');
+                setIndustry('全部');
+                handleModeChange('none');
+                setShowSocial(false);
+                setShowPersonal(false);
+                setPersonalScores({salary: 3, stability: 3, flexibility: 3, wl_balance: 3, autonomy: 3, career_speed: 3, growth: 3});
+            };
+
+            const isSocialAvailable = industry !== '全部' && industry !== 'G. 尚無明確想法';
+
+            return (
+                <div className="flex flex-col lg:flex-row min-h-screen">
+                    {/* Sidebar */}
+                    <div className="w-full lg:w-1/4 bg-white p-6 shadow-xl border-r border-slate-200 overflow-y-auto custom-scrollbar lg:h-screen sticky top-0">
+                        <div className="flex items-center gap-3 mb-8 text-slate-800">
+                            <div className="bg-blue-600 p-2 rounded-lg text-white">
+                                <FilterIcon size={24} />
+                            </div>
+                            <h1 className="text-xl font-bold tracking-tight">職場 DNA 診斷</h1>
+                        </div>
+
+                        <div className="space-y-6">
+                            
+                            {/* Personal Input Section */}
+                            <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+                                <div className="flex items-center justify-between mb-3">
+                                    <label className="flex items-center gap-2 text-sm font-bold text-indigo-800">
+                                        <UserEditIcon size={16} /> 我的理想畫布
+                                    </label>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input 
+                                            type="checkbox" 
+                                            className="sr-only peer"
+                                            checked={showPersonal}
+                                            onChange={(e) => setShowPersonal(e.target.checked)}
+                                        />
+                                        <div className="w-9 h-5 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                                    </label>
+                                </div>
+                                
+                                <div className={`space-y-3 transition-all duration-300 overflow-hidden ${showPersonal ? 'max-h-[500px] opacity-100 pt-2' : 'max-h-0 opacity-0'}`}>
+                                    {factorOrder.map(factor => (
+                                        <div key={factor}>
+                                            <div className="flex justify-between text-xs text-indigo-700 font-medium mb-1">
+                                                <span>{translations[factor]}</span>
+                                                <span>{personalScores[factor]}分</span>
+                                            </div>
+                                            <input 
+                                                type="range" 
+                                                min="1" max="5" step="1"
+                                                value={personalScores[factor]}
+                                                onChange={(e) => handleScoreChange(factor, e.target.value)}
+                                                className="w-full h-1 bg-indigo-200 rounded-lg appearance-none cursor-pointer"
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                                <p className="text-xs text-indigo-500 mt-2">
+                                    {showPersonal ? "拖曳滑桿調整您的理想分數。" : "開啟以輸入您的分數進行對比。"}
+                                </p>
+                            </div>
+
+                            <hr className="border-slate-100" />
+
+                            {/* Comparison Mode Selector */}
+                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-3">
+                                    <LayersIcon size={16} className="text-purple-600"/> 分組比較模式
+                                </label>
+                                <select 
+                                    className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-sm font-medium focus:ring-2 focus:ring-purple-500 outline-none transition-all cursor-pointer hover:border-purple-400 mb-2"
+                                    value={compareMode} 
+                                    onChange={(e) => handleModeChange(e.target.value)}
+                                >
+                                    <option value="none">⊘ 不分組 (整體平均)</option>
+                                    <option value="gender">⚥ 依性別比較 (男 vs 女)</option>
+                                    <option value="grade">🎓 依年級比較 (大一~碩士)</option>
+                                    <option value="industry">🏢 依產業比較 (A~G)</option>
+                                </select>
+
+                                {/* Custom Series Selection UI */}
+                                {compareMode !== 'none' && (
+                                    <div className="mt-3 pl-1 space-y-2 max-h-48 overflow-y-auto custom-scrollbar border-t border-slate-200 pt-3">
+                                        <p className="text-xs text-slate-500 font-bold uppercase mb-2">勾選要顯示的項目：</p>
+                                        {getAvailableGroups(compareMode).map(item => (
+                                            <label key={item} className="flex items-start gap-2 cursor-pointer hover:bg-slate-100 p-1 rounded transition-colors">
+                                                <div className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center transition-colors ${selectedGroups.includes(item) ? 'bg-purple-600 border-purple-600 text-white' : 'bg-white border-slate-300'}`}>
+                                                    {selectedGroups.includes(item) && <CheckIcon size={12} strokeWidth={3} />}
+                                                </div>
+                                                <input 
+                                                    type="checkbox" 
+                                                    className="hidden"
+                                                    checked={selectedGroups.includes(item)}
+                                                    onChange={() => toggleGroup(item)}
+                                                />
+                                                <span className="text-sm text-slate-700 leading-tight select-none">{item}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Filters */}
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">性別 (Gender)</label>
+                                    <select className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none" value={gender} onChange={(e) => setGender(e.target.value)}>
+                                        {uniqueGenders.map(g => <option key={g} value={g}>{g}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">年級 (Grade)</label>
+                                    <select className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none" value={grade} onChange={(e) => setGrade(e.target.value)}>
+                                        {uniqueGrades.map(g => <option key={g} value={g}>{g}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">嚮往產業 (Industry)</label>
+                                    <select className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none" value={industry} onChange={(e) => {
+                                        setIndustry(e.target.value);
+                                        if (e.target.value === '全部') setShowSocial(false);
+                                    }}>
+                                        {uniqueIndustries.map(i => <option key={i} value={i}>{i}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <button onClick={handleReset} className="w-full flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-600 py-3 rounded-lg transition-all font-medium text-sm mt-4">
+                                <RefreshIcon size={16} /> 重置所有條件
+                            </button>
+
+                            {/* Social Reality Toggle */}
+                            <div className={`mt-6 transition-all duration-500 ease-in-out ${isSocialAvailable ? 'opacity-100 translate-y-0' : 'opacity-50 translate-y-2 pointer-events-none grayscale'}`}>
+                                <div className="p-4 bg-red-50 rounded-xl border border-red-100 relative overflow-hidden">
+                                    {!isSocialAvailable && <div className="absolute inset-0 bg-white/60 z-10 backdrop-blur-[1px]"></div>}
+                                    <div className="flex items-center justify-between mb-2">
+                                        <div className="flex items-center gap-2 text-red-700 font-bold text-sm">
+                                            <AlertIcon size={16} /> 現實對比模式
+                                        </div>
+                                        <div 
+                                            className={`w-10 h-5 rounded-full p-1 cursor-pointer transition-colors duration-300 ${showSocial ? 'bg-red-500' : 'bg-slate-300'}`}
+                                            onClick={() => isSocialAvailable && setShowSocial(!showSocial)}
+                                        >
+                                            <div className={`bg-white w-3 h-3 rounded-full shadow-md transform duration-300 ${showSocial ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-red-600/80 leading-relaxed">
+                                        {isSocialAvailable ? "開啟以重疊顯示該產業的「社會刻板印象」分數。" : "請先選取單一特定產業以啟用此功能。"}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Main Content */}
+                    <div className="w-full lg:w-3/4 p-4 lg:p-10 flex flex-col bg-slate-50/50">
+                        {/* Info Header */}
+                        <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex flex-col justify-center mb-8">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <div>
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <span className="text-xs text-slate-500 font-semibold uppercase bg-slate-100 px-2 py-0.5 rounded">目前篩選</span>
+                                        <span className="text-sm font-medium text-slate-700">
+                                            {gender === '全部' ? '全性別' : gender} • {grade === '全部' ? '全年級' : grade} • {industry.split('.')[0]}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                         <span className="text-xs text-purple-500 font-semibold uppercase bg-purple-50 px-2 py-0.5 rounded">比較模式</span>
+                                         <span className="text-sm font-medium text-slate-700">
+                                            {compareMode === 'none' && '單一分析'}
+                                            {compareMode === 'gender' && '性別對照'}
+                                            {compareMode === 'grade' && '年級趨勢'}
+                                            {compareMode === 'industry' && '產業落點比較'}
+                                         </span>
+                                    </div>
+                                </div>
+                                {(groups.length > 0 || showPersonal) && (
+                                    <div className="text-right">
+                                        <span className="text-xs text-slate-400 font-medium">顯示中</span>
+                                        <div className="flex flex-wrap justify-end gap-1 mt-1">
+                                            {groups.slice(0, 3).map((g, i) => (
+                                                <span key={i} className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded">{g}</span>
+                                            ))}
+                                            {groups.length > 3 && <span className="text-xs bg-slate-100 text-slate-400 px-2 py-1 rounded">+{groups.length - 3}</span>}
+                                            {showPersonal && <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded font-bold border border-indigo-200">我 (Personal)</span>}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Chart Area */}
+                        <div className="flex-grow bg-white rounded-2xl shadow-lg border border-slate-100 p-4 lg:p-8 flex flex-col relative min-h-[500px]">
+                            {chartData.length > 0 ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <RadarChart cx="50%" cy="50%" outerRadius="70%" data={chartData}>
+                                        <PolarGrid stroke="#e2e8f0" />
+                                        <PolarAngleAxis dataKey="subject" tick={{ fill: '#475569', fontSize: 13, fontWeight: 600 }} />
+                                        <PolarRadiusAxis angle={30} domain={[0, 5]} tick={false} axisLine={false} />
+                                        
+                                        {/* Dynamic Radars based on selected groups */}
+                                        {groups.map((group, index) => (
+                                            <Radar
+                                                key={group}
+                                                name={group}
+                                                dataKey={group}
+                                                stroke={compareMode === 'none' ? '#2563eb' : colorPalette[index % colorPalette.length]}
+                                                strokeWidth={3}
+                                                fill={compareMode === 'none' ? '#3b82f6' : colorPalette[index % colorPalette.length]}
+                                                fillOpacity={compareMode === 'none' ? 0.3 : 0.05}
+                                            />
+                                        ))}
+
+                                        {/* Social Reality Radar */}
+                                        {showSocial && isSocialAvailable && (
+                                            <Radar
+                                                name="社會認定 (Social Reality)"
+                                                dataKey="SocialReality"
+                                                stroke="#ef4444"
+                                                strokeWidth={3}
+                                                strokeDasharray="6 6"
+                                                fill="none" 
+                                            />
+                                        )}
+
+                                        {/* Personal Radar */}
+                                        {showPersonal && (
+                                            <Radar
+                                                name="個人理想 (My Ideal)"
+                                                dataKey="Personal"
+                                                stroke="#1f2937" 
+                                                strokeWidth={4}
+                                                fill="none"
+                                            />
+                                        )}
+
+                                        <Legend 
+                                            wrapperStyle={{ paddingTop: '20px' }} 
+                                            iconType="circle"
+                                        />
+                                        <Tooltip 
+                                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', padding: '12px' }}
+                                            itemStyle={{ fontSize: '13px', fontWeight: 500 }}
+                                        />
+                                    </RadarChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400">
+                                    <div className="bg-slate-50 p-6 rounded-full mb-4">
+                                        <FilterIcon size={48} className="opacity-20" />
+                                    </div>
+                                    <p className="text-lg font-medium">此篩選組合下沒有樣本數據</p>
+                                    <p className="text-sm">請嘗試放寬篩選條件或重新勾選比較項目</p>
+                                </div>
+                            )}
+                        </div>
+                        <div className="mt-6 text-center text-xs text-slate-400 font-medium">
+                            Designed for 世代的迴響 Project | Powered by React & Recharts
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
